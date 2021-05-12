@@ -1,0 +1,96 @@
+version: '3.5'
+
+networks:
+  lendo-private:
+
+volumes:
+  minio-data:
+  caddy-data:
+  registry-data-ci:
+  registry-data-cache:
+
+services:
+  caddy-proxy:
+    image: abiosoft/caddy:no-stats
+    restart: always
+    networks:
+      - lendo-private
+    links:
+      - registry-browser-ci:ci-browser
+      - registry-browser-cache:cache-browser
+      - docker-registry-ci:ci-registry
+      - docker-registry-cache:cache-registry
+    environment:
+      - CADDYPATH=/etc/caddy/data
+      - ACME_AGREE=true
+    volumes:
+      - ./config/caddy/Caddyfile:/etc/Caddyfile:ro
+      - ./config/caddy/conf.d:/etc/caddy/conf.d:ro
+      - caddy-data:/etc/caddy/data:rw
+    depends_on:
+      - registry-browser-ci
+      - registry-browser-cache
+    ports:
+      - "443:443"
+      - "80:80"
+      - "5000:5000"
+
+  redis-server:
+    image: redis:alpine
+    restart: always
+    networks:
+      - lendo-private
+
+  registry-browser-ci:
+    image: klausmeyer/docker-registry-browser:latest
+    restart: always
+    networks:
+      - lendo-private
+    environment:
+      - DOCKER_REGISTRY_URL=http://docker-registry-ci:5000
+      - NO_SSL_VERIFICATION=true
+      - ENABLE_DELETE_IMAGES=true
+      - PORT=8080
+    depends_on:
+      - docker-registry-ci
+
+  registry-browser-cache:
+    image: klausmeyer/docker-registry-browser:latest
+    restart: always
+    networks:
+      - lendo-private
+    environment:
+      - DOCKER_REGISTRY_URL=http://docker-registry-cache:5000
+      - NO_SSL_VERIFICATION=true
+      - ENABLE_DELETE_IMAGES=true
+      - PORT=8080
+    depends_on:
+      - docker-registry-cache
+
+  docker-registry-ci:
+    image: registry:latest
+    restart: always
+    networks:
+      - lendo-private
+    volumes:
+      - ./config/registry/registry-ci.yaml:/etc/docker/registry/config.yml:ro
+      - ./credentials/registry-ci.htpasswd:/etc/docker/registry/registry-ci.htpasswd:ro
+      - registry-data-ci:/var/lib/registry:rw
+    links:
+      - redis-server:redis
+    depends_on:
+      - redis-server
+
+  docker-registry-cache:
+    image: registry:latest
+    restart: always
+    networks:
+      - lendo-private
+    links:
+      - redis-server:redis
+    volumes:
+      - ./config/registry/registry-cache.yaml:/etc/docker/registry/config.yml:ro
+      - ./credentials/registry-cache.htpasswd:/etc/docker/registry/registry-cache.htpasswd:ro
+      - registry-data-cache:/var/lib/registry:rw
+    depends_on:
+      - redis-server

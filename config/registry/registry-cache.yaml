@@ -1,0 +1,61 @@
+version: 0.1
+log:
+  accesslog:
+    disabled: true
+  level: error
+  formatter: text
+  fields:
+    service: registry
+    environment: staging
+  hooks:
+    - type: mail
+      disabled: true
+      levels:
+        - panic
+      options:
+        smtp:
+          addr: mail.example.com:25
+          username: mailuser
+          password: password
+          insecure: false
+        from: sender@example.com
+        to:
+          - errors@example.com
+storage:
+  filesystem:
+    rootdirectory: /var/lib/registry
+  delete:
+    enabled: true
+  redirect:
+    disable: false
+  cache:
+    blobdescriptor: redis
+  maintenance:
+    uploadpurging:
+      enabled: true
+      age: 168h
+      interval: 24h
+      dryrun: false
+    readonly:
+      enabled: false
+auth:
+  htpasswd:
+    realm: basic-realm
+    path: /etc/docker/registry/registry-cache.htpasswd
+http:
+  addr: 0.0.0.0:5000
+  host: https://docker-cache.mydomain.com:5000
+  relativeurls: false
+  draintimeout: 60s
+  http2:
+    disabled: false
+redis:
+  addr: redis:6379
+  db: 1
+  dialtimeout: 10ms
+  readtimeout: 10ms
+  writetimeout: 10ms
+  pool:
+    maxidle: 16
+    maxactive: 64
+    idletimeout: 300s
