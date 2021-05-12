@@ -1,10 +1,9 @@
 version: '3.5'
 
 networks:
-  lendo-private:
+  my-private:
 
 volumes:
-  minio-data:
   caddy-data:
   registry-data-ci:
   registry-data-cache:
@@ -14,7 +13,7 @@ services:
     image: abiosoft/caddy:no-stats
     restart: always
     networks:
-      - lendo-private
+      - my-private
     links:
       - registry-browser-ci:ci-browser
       - registry-browser-cache:cache-browser
@@ -39,13 +38,13 @@ services:
     image: redis:alpine
     restart: always
     networks:
-      - lendo-private
+      - my-private
 
   registry-browser-ci:
     image: klausmeyer/docker-registry-browser:latest
     restart: always
     networks:
-      - lendo-private
+      - my-private
     environment:
       - DOCKER_REGISTRY_URL=http://docker-registry-ci:5000
       - NO_SSL_VERIFICATION=true
@@ -58,7 +57,7 @@ services:
     image: klausmeyer/docker-registry-browser:latest
     restart: always
     networks:
-      - lendo-private
+      - my-private
     environment:
       - DOCKER_REGISTRY_URL=http://docker-registry-cache:5000
       - NO_SSL_VERIFICATION=true
@@ -71,7 +70,7 @@ services:
     image: registry:latest
     restart: always
     networks:
-      - lendo-private
+      - my-private
     volumes:
       - ./config/registry/registry-ci.yaml:/etc/docker/registry/config.yml:ro
       - ./credentials/registry-ci.htpasswd:/etc/docker/registry/registry-ci.htpasswd:ro
@@ -85,7 +84,7 @@ services:
     image: registry:latest
     restart: always
     networks:
-      - lendo-private
+      - my-private
     links:
       - redis-server:redis
     volumes:
